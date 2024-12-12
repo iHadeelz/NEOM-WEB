@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report a Problem</title>
+  <img class="logo" src="logo1.png" alt="Neomism Logo">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #cce7ff, #e6f3ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+
+    .report-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      width: 500px;
+      text-align: center;
+      max-width: 100%;
+    }
+
+    .report-container h2 {
+      margin-bottom: 25px;
+      font-size: 24px;
+      color: #0077B6;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      background-color: #fafafa;
+    }
+
+    .form-group input:disabled {
+      background-color: #e9ecef;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #0077B6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #005f8a;
+    }
+
+    .success {
+      color: green;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+
+    .error {
+      color: red;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    .header .logo {
+      width: 100px;
+      height: auto;
+      margin-bottom: 10px;
+      animation: bounce 2s infinite;
+    }
+  </style>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6pzBFkIF6RV9rDSrX2C-Sa2xI2hBiVrE",
+      authDomain: "neom-web.firebaseapp.com",
+      projectId: "neom-web",
+      storageBucket: "neom-web.appspot.com",
+      messagingSenderId: "881751642763",
+      appId: "1:881751642763:web:d961fbe97db49c90c2ba8e",
+      measurementId: "G-4MLT5VWXNT"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+  
+    // Function to sanitize email
+    function sanitizeEmail(email) {
+      return email.replace(/\./g, "_").replace(/@/g, "_at_");
+    }
+  
+    // Fetch user data from Firestore
+    async function fetchUserData(email) {
+      const sanitizedEmail = sanitizeEmail(email);
+      const userDoc = doc(db, "users", sanitizedEmail);
+      const docSnapshot = await getDoc(userDoc);
+  
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        document.getElementById("name").value = data.firstName || "Anonymous"; // Set first name
+        document.getElementById("email").value = data.email || ""; // Set email
+      } else {
+        alert("No user data found!");
+      }
+    }
+  
+    // Save problem description to Firestore
+    async function saveProblem(email) {
+      const problemDescription = document.getElementById("problem").value;
+      const name = document.getElementById("name").value;
+  
+      if (!problemDescription) {
+        alert("Please describe the problem.");
+        return;
+      }
+  
+      try {
+        await addDoc(collection(db, "problems"), {
+          userId: sanitizeEmail(email), // Link problem to the user
+          name: name, // User's first name
+          email: email, // User's email
+          description: problemDescription, // Problem description
+          timestamp: serverTimestamp() // Time the problem was reported
+        });
+  
+        // Show success message
+        document.getElementById("successMessage").textContent = `Thank you, ${name}. Your report has been submitted successfully!`;
+        document.getElementById("successMessage").style.display = "block";
+        document.getElementById("problem").value = ""; // Clear the textarea
+      } catch (error) {
+        console.error("Error submitting problem: ", error);
+        alert("There was an error submitting your report. Please try again.");
+      }
+    }
+  
+    // Initialize on page load
+    window.onload = () => {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          const email = user.email;
+          fetchUserData(email); // Fetch user data from Firestore
+  
+          document.getElementById("submitProblem").addEventListener("click", () => {
+            saveProblem(email); // Save the problem description
+          });
+        } else {
+          alert("No user is signed in!");
+          window.location.href = "login.html";
+        }
+      });
+    };
+  </script>
+  
+</head>
+<body>
+  <div class="report-container">
+    <h2>Report a Problem</h2>
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" disabled>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" disabled>
+    </div>
+    <div class="form-group">
+      <label for="problem">Problem Description:</label>
+      <textarea id="problem" placeholder="Describe the issue"></textarea>
+    </div>
+    <button type="button" id="submitProblem" class="btn">Submit</button>
+    <p id="successMessage" class="success" style="display: none;"></p>
+  </div>
+</body>
+</html>
