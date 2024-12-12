@@ -132,8 +132,7 @@
       }
     }
   </style>
-  
-  <script type="module">
+ <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
@@ -153,59 +152,65 @@
     const auth = getAuth(app);
     const firestore = getFirestore(app);
 
-   // Function to sanitize email (used during registration and login)
-function sanitizeEmail(email) {
-  return email.replace(/\./g, "_").replace(/@/g, "_at_");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const loginForm = document.getElementById("login-form");
-
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const errorMessages = document.getElementById("error-messages");
-
-    try {
-      // Clear error messages
-      errorMessages.textContent = "";
-
-      // Attempt to sign in the user
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Use sanitized email to fetch user data
-      const sanitizedEmail = email.replace(/\./g, "_").replace(/@/g, "_at_");
-      const userDoc = doc(firestore, "users", sanitizedEmail);
-      const docSnapshot = await getDoc(userDoc);
-
-      if (docSnapshot.exists()) {
-        alert("Login successful! Welcome back.");
-        window.location.href = "homepage.html"; // Redirect to homepage
-      } else {
-        alert("User not found in database!");
-      }
-    } catch (error) {
-      console.error("Error during login:", error);
-
-      // Handle specific errors
-      if (error.code === "auth/user-not-found") {
-        errorMessages.textContent = "No user found with this email. Please register first.";
-      } else if (error.code === "auth/wrong-password") {
-        errorMessages.textContent = "Incorrect password. Please try again.";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessages.textContent = "Invalid email format.";
-      } else {
-        errorMessages.textContent = "Login failed: " + error.message;
-      }
+    // Function to sanitize email (used during registration and login)
+    function sanitizeEmail(email) {
+        return email.replace(/\./g, "_").replace(/@/g, "_at_");
     }
-  });
-});
 
+    document.addEventListener("DOMContentLoaded", () => {
+        const loginForm = document.getElementById("login-form");
 
-  </script>
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorMessages = document.getElementById("error-messages");
+
+            try {
+                // Clear error messages
+                errorMessages.textContent = "";
+
+                // Attempt to sign in the user
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Check for admin credentials
+                if (email === "admin@gmail.com" && password === "admin1") {
+                    alert("Welcome Admin!");
+                    window.location.href = "admin.html"; // Redirect to admin page
+                    return;
+                }
+
+                // Use sanitized email to fetch user data
+                const sanitizedEmail = sanitizeEmail(email);
+                const userDoc = doc(firestore, "users", sanitizedEmail);
+                const docSnapshot = await getDoc(userDoc);
+
+                if (docSnapshot.exists()) {
+                    alert("Login successful! Welcome back.");
+                    window.location.href = "homepage.html"; // Redirect to homepage
+                } else {
+                    alert("User not found in database!");
+                }
+            } catch (error) {
+                console.error("Error during login:", error);
+
+                // Handle specific errors
+                if (error.code === "auth/user-not-found") {
+                    errorMessages.textContent = "No user found with this email. Please register first.";
+                } else if (error.code === "auth/wrong-password") {
+                    errorMessages.textContent = "Incorrect password. Please try again.";
+                } else if (error.code === "auth/invalid-email") {
+                    errorMessages.textContent = "Invalid email format.";
+                } else {
+                    errorMessages.textContent = "Login failed: " + error.message;
+                }
+            }
+        });
+    });
+</script>
+
 </head>
 <body>
   <div class="login-container">
